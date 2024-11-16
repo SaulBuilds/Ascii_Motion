@@ -18,10 +18,10 @@ class ASCIIArt {
         };
         this.setupCanvas();
         this.setupCursor();
-        this.setupFileUpload();
         this.setupConfigPanel();
         this.setupWebSocket();
         this.videoToASCII = new VideoToASCII(this);
+        this.setupFileUpload(); // Moved here as requested
     }
 
     setupWebSocket() {
@@ -125,11 +125,50 @@ class ASCIIArt {
             document.getElementById('frameRateValue').textContent = `${this.config.frameRate} FPS`;
         });
 
-        // Add save button event listener
         document.querySelector('[data-action="save-art"]').addEventListener('click', () => {
             const title = prompt('Enter a title for your ASCII art:');
             if (title) {
                 this.saveArt(title);
+            }
+        });
+    }
+
+    setupFileUpload() {
+        document.querySelector('[data-action="upload-video"]').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const videoInput = document.getElementById('videoUpload');
+            videoInput.value = ''; // Reset input
+            videoInput.click();
+        });
+
+        const videoInput = document.getElementById('videoUpload');
+        videoInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                await this.videoToASCII.processVideo(file);
+            }
+        });
+
+        // Add image upload handler
+        document.querySelector('[data-action="upload-image"]').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const imageInput = document.getElementById('imageUpload');
+            imageInput.click();
+        });
+
+        const imageInput = document.getElementById('imageUpload');
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => this.convertImageToAscii(img);
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
             }
         });
     }
@@ -175,6 +214,9 @@ class ASCIIArt {
 
 class VideoToASCII {
     constructor(asciiArt) {
+        if (!asciiArt) {
+            throw new Error('ASCIIArt instance must be provided');
+        }
         this.asciiArt = asciiArt;
         this.frameBuffer = [];
         this.isPlaying = false;
@@ -213,19 +255,14 @@ class VideoToASCII {
         const loadingIndicator = document.querySelector('.loading-indicator');
         const controls = document.getElementById('video-controls');
         loadingIndicator.style.display = 'block';
-        controls.style.display = 'block';
-
-        const loadTimeout = setTimeout(() => {
-            alert('Video loading timed out. Please try a smaller file.');
-            loadingIndicator.style.display = 'none';
-        }, 30000);
+        controls.style.display = 'flex';
 
         video.addEventListener('loadeddata', () => {
-            clearTimeout(loadTimeout);
             this.extractFrames(video).then(() => {
                 loadingIndicator.style.display = 'none';
                 this.playASCII();
             }).catch(err => {
+                console.error('Error processing video:', err);
                 alert('Error processing video: ' + err.message);
                 loadingIndicator.style.display = 'none';
             });
@@ -240,11 +277,9 @@ class VideoToASCII {
         const frameRate = this.asciiArt.config.frameRate;
         const frameCount = Math.floor(video.duration * frameRate);
         
-        // Adjust width and height calculations
-        canvas.width = Math.ceil(window.innerWidth / 8);  // Ensure full width
-        canvas.height = Math.ceil(window.innerHeight / 16); // Ensure full height
+        canvas.width = Math.ceil(window.innerWidth / 8);
+        canvas.height = Math.ceil(window.innerHeight / 16);
         
-        // Update video dimensions to maintain aspect ratio
         const videoAspect = video.videoWidth / video.videoHeight;
         const canvasAspect = canvas.width / canvas.height;
         
@@ -257,39 +292,26 @@ class VideoToASCII {
             drawWidth = canvas.height * videoAspect;
         }
         
-        // Center the video
         const offsetX = (canvas.width - drawWidth) / 2;
         const offsetY = (canvas.height - drawHeight) / 2;
 
         for (let i = 0; i < frameCount; i++) {
             video.currentTime = i / frameRate;
-            try {
-                await new Promise((resolve, reject) => {
-                    const timeoutId = setTimeout(() => {
-                        reject(new Error('Frame extraction timed out'));
-                    }, 5000);
-
-                    video.addEventListener('seeked', () => {
-                        clearTimeout(timeoutId);
-                        // Clear canvas before drawing
-                        ctx.fillStyle = 'black';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        // Draw video frame centered
-                        ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
-                        const frame = this.convertFrameToASCII(ctx, canvas.width, canvas.height);
-                        if (frame) {  // Add null check
-                            this.frameBuffer.push({
-                                ascii: frame,
-                                timestamp: i / frameRate
-                            });
-                        }
-                        resolve();
-                    }, { once: true });
-                });
-            } catch (error) {
-                console.error('Error extracting frame:', error);
-                throw error;
-            }
+            await new Promise((resolve) => {
+                video.addEventListener('seeked', () => {
+                    ctx.fillStyle = 'black';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
+                    const frame = this.convertFrameToASCII(ctx, canvas.width, canvas.height);
+                    if (frame) {
+                        this.frameBuffer.push({
+                            ascii: frame,
+                            timestamp: i / frameRate
+                        });
+                    }
+                    resolve();
+                }, { once: true });
+            });
         }
     }
 
@@ -298,7 +320,6 @@ class VideoToASCII {
         const imageData = ctx.getImageData(0, 0, width, height);
         let asciiFrame = '';
         
-        // Safely access the chars configuration with fallback
         const chars = (this.asciiArt && 
                       this.asciiArt.config && 
                       this.asciiArt.config.charSets && 
@@ -332,9 +353,9 @@ class VideoToASCII {
         }
         
         const frame = this.frameBuffer[this.currentFrame];
-        if (!frame) return; // Add early return if frame is undefined
+        if (!frame) return;
         
-        if (frame && frame.ascii && this.asciiArt && this.asciiArt.ascii_container) {
+        if (frame.ascii && this.asciiArt && this.asciiArt.ascii_container) {
             this.asciiArt.ascii_container.textContent = frame.ascii;
             this.currentFrame++;
             setTimeout(() => requestAnimationFrame(() => this.playNextFrame()), 1000 / this.asciiArt.config.frameRate);
@@ -348,7 +369,9 @@ class VideoToASCII {
     stopASCII() {
         this.isPlaying = false;
         this.currentFrame = 0;
-        this.asciiArt.ascii_container.textContent = '';
+        if (this.asciiArt && this.asciiArt.ascii_container) {
+            this.asciiArt.ascii_container.textContent = '';
+        }
     }
 
     exportAsTXT() {
