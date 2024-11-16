@@ -44,14 +44,12 @@ class ASCIIArt {
     }
 
     setupConfigPanel() {
-        // Toggle config panel
         document.querySelector('[data-action="toggle-config"]').addEventListener('click', (e) => {
             e.preventDefault();
             const panel = document.getElementById('config-panel');
             panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
         });
 
-        // Color pickers
         document.getElementById('fgColor').addEventListener('change', (e) => {
             this.config.fgColor = e.target.value;
             this.ascii_container.style.color = this.config.fgColor;
@@ -62,17 +60,14 @@ class ASCIIArt {
             document.body.style.backgroundColor = this.config.bgColor;
         });
 
-        // Character density
         document.getElementById('charDensity').addEventListener('input', (e) => {
             this.config.density = parseInt(e.target.value);
         });
 
-        // Character set
         document.getElementById('charSet').addEventListener('change', (e) => {
             this.config.currentCharSet = e.target.value;
         });
 
-        // Frame rate
         document.getElementById('frameRate').addEventListener('input', (e) => {
             this.config.frameRate = parseInt(e.target.value);
             document.getElementById('frameRateValue').textContent = `${this.config.frameRate} FPS`;
@@ -186,7 +181,6 @@ class VideoToASCII {
         document.querySelector('[data-action="pause-video"]').addEventListener('click', () => this.pauseASCII());
         document.querySelector('[data-action="stop-video"]').addEventListener('click', () => this.stopASCII());
         
-        // Export controls
         document.querySelector('[data-action="export-txt"]').addEventListener('click', () => this.exportAsTXT());
         document.querySelector('[data-action="export-json"]').addEventListener('click', () => this.exportAsJSON());
         document.querySelector('[data-action="export-video"]').addEventListener('click', () => this.exportVideo());
@@ -238,8 +232,26 @@ class VideoToASCII {
         const frameRate = this.asciiArt.config.frameRate;
         const frameCount = Math.floor(video.duration * frameRate);
         
-        canvas.width = this.asciiArt.config.density;
-        canvas.height = Math.floor(video.videoHeight * canvas.width / video.videoWidth / 2);
+        // Adjust width and height calculations
+        canvas.width = Math.ceil(window.innerWidth / 8);  // Ensure full width
+        canvas.height = Math.ceil(window.innerHeight / 16); // Ensure full height
+        
+        // Update video dimensions to maintain aspect ratio
+        const videoAspect = video.videoWidth / video.videoHeight;
+        const canvasAspect = canvas.width / canvas.height;
+        
+        let drawWidth = canvas.width;
+        let drawHeight = canvas.height;
+        
+        if (videoAspect > canvasAspect) {
+            drawHeight = canvas.width / videoAspect;
+        } else {
+            drawWidth = canvas.height * videoAspect;
+        }
+        
+        // Center the video
+        const offsetX = (canvas.width - drawWidth) / 2;
+        const offsetY = (canvas.height - drawHeight) / 2;
 
         for (let i = 0; i < frameCount; i++) {
             video.currentTime = i / frameRate;
@@ -251,12 +263,18 @@ class VideoToASCII {
 
                     video.addEventListener('seeked', () => {
                         clearTimeout(timeoutId);
-                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        // Clear canvas before drawing
+                        ctx.fillStyle = 'black';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        // Draw video frame centered
+                        ctx.drawImage(video, offsetX, offsetY, drawWidth, drawHeight);
                         const frame = this.convertFrameToASCII(ctx, canvas.width, canvas.height);
-                        this.frameBuffer.push({
-                            ascii: frame,
-                            timestamp: i / frameRate
-                        });
+                        if (frame) {  // Add null check
+                            this.frameBuffer.push({
+                                ascii: frame,
+                                timestamp: i / frameRate
+                            });
+                        }
                         resolve();
                     }, { once: true });
                 });
@@ -292,16 +310,18 @@ class VideoToASCII {
     }
 
     playNextFrame() {
-        if (!this.isPlaying) return;
+        if (!this.isPlaying || !this.frameBuffer || this.frameBuffer.length === 0) return;
         
         if (this.currentFrame >= this.frameBuffer.length) {
             this.currentFrame = 0;
         }
         
-        this.asciiArt.ascii_container.textContent = this.frameBuffer[this.currentFrame].ascii;
-        this.currentFrame++;
-        
-        setTimeout(() => requestAnimationFrame(() => this.playNextFrame()), 1000 / this.asciiArt.config.frameRate);
+        const frame = this.frameBuffer[this.currentFrame];
+        if (frame && frame.ascii) {
+            this.asciiArt.ascii_container.textContent = frame.ascii;
+            this.currentFrame++;
+            setTimeout(() => requestAnimationFrame(() => this.playNextFrame()), 1000 / this.asciiArt.config.frameRate);
+        }
     }
 
     pauseASCII() {
