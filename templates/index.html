@@ -13,11 +13,19 @@
                 <li><a href="#" class="nav-link" data-action="toggle-animation">Toggle Animation</a></li>
                 <li><a href="#" class="nav-link" data-action="change-pattern">Change Pattern</a></li>
                 <li><a href="#" class="nav-link" data-action="upload-image">Upload Image</a></li>
+                <li><a href="#" class="nav-link" data-action="upload-video">Upload Video</a></li>
             </ul>
         </nav>
+        <div id="video-controls" class="controls" style="display: none;">
+            <button data-action="play-video">Play</button>
+            <button data-action="pause-video">Pause</button>
+            <button data-action="stop-video">Stop</button>
+            <div class="loading-indicator" style="display: none;">Converting video...</div>
+        </div>
     </div>
 
     <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+    <input type="file" id="videoUpload" accept="video/*" style="display: none;">
     
     <main>
         <canvas id="asciiCanvas"></canvas>

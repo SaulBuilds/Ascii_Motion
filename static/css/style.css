@@ -85,3 +85,35 @@ nav ul {
     z-index: 9999;
     transition: transform 0.1s ease;
 }
+
+/* Video Controls */
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.controls button {
+    background: transparent;
+    color: #33ff33;
+    border: 1px solid #33ff33;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    font-family: 'VT323', monospace;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.controls button:hover {
+    background: rgba(51, 255, 51, 0.2);
+    text-shadow: 0 0 5px #33ff33;
+}
+
+.loading-indicator {
+    color: #33ff33;
+    text-align: center;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    text-shadow: 0 0 5px #33ff33;
+}
