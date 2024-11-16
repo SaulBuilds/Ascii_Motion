@@ -95,6 +95,8 @@ class ASCIIArt {
         document.querySelector('[data-action="upload-video"]').addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            const videoInput = document.getElementById('videoUpload');
+            videoInput.value = ''; // Reset the input before clicking
             videoInput.click();
         });
 
@@ -112,10 +114,11 @@ class ASCIIArt {
         });
 
         videoInput.addEventListener('change', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             const file = e.target.files[0];
             if (file) {
                 try {
-                    videoInput.value = '';
                     const loadingIndicator = document.querySelector('.loading-indicator');
                     loadingIndicator.style.display = 'block';
                     await this.videoToASCII.processVideo(file);
@@ -124,6 +127,7 @@ class ASCIIArt {
                     alert('Error processing video. Please try again.');
                 }
             }
+            videoInput.value = ''; // Reset after processing
         });
     }
 
