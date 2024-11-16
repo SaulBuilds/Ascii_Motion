@@ -33,12 +33,20 @@ class ASCIIArt {
     setupFileUpload() {
         const imageInput = document.getElementById('imageUpload');
         const videoInput = document.getElementById('videoUpload');
+        
+        // Initialize video input element
+        videoInput.style.display = 'none';
+        videoInput.setAttribute('accept', 'video/*');
 
-        document.querySelector('[data-action="upload-image"]').addEventListener('click', () => {
+        document.querySelector('[data-action="upload-image"]').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             imageInput.click();
         });
 
-        document.querySelector('[data-action="upload-video"]').addEventListener('click', () => {
+        document.querySelector('[data-action="upload-video"]').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             videoInput.click();
         });
 
