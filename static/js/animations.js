@@ -25,26 +25,35 @@ class ASCIIAnimations {
     }
 
     rainPattern(x, y, time) {
-        return Math.random() > 0.95 ? '@' : 
-               Math.random() > 0.9 ? '#' : 
-               Math.random() > 0.8 ? '$' : ' ';
+        const density = Math.sin(y * 0.1 + time * 0.001) * 0.1;
+        return Math.random() > (0.97 - density) ? '@' : 
+               Math.random() > (0.92 - density) ? '#' : 
+               Math.random() > (0.85 - density) ? '$' :
+               Math.random() > (0.80 - density) ? '%' :
+               Math.random() > (0.75 - density) ? '=' : ' ';
     }
 
     wavePattern(x, y, time) {
-        const value = Math.sin(x * 0.1 + time * 0.01) + Math.cos(y * 0.1 + time * 0.01);
+        const scale = 0.15;
+        const timeScale = 0.015;
+        const value = Math.sin(x * scale + time * timeScale) * 
+                     Math.cos(y * scale + time * timeScale) +
+                     Math.sin((x + y) * scale * 0.5 + time * timeScale);
         const chars = '@#$%=+*:-. ';
         const index = Math.floor(((value + 2) / 4) * chars.length);
         return chars[Math.max(0, Math.min(chars.length - 1, index))];
     }
 
     spiralPattern(x, y, time) {
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
+        const centerX = window.innerWidth / 16;
+        const centerY = window.innerHeight / 32;
         const dx = x - centerX;
         const dy = y - centerY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const angle = Math.atan2(dy, dx);
-        const value = Math.sin(distance * 0.1 - time * 0.01 + angle);
+        const spiral = Math.sin(distance * 0.2 - time * 0.01 + angle * 2);
+        const wave = Math.cos(x * 0.1 + y * 0.1 + time * 0.01);
+        const value = (spiral + wave) * 0.5;
         const chars = '@#$%=+*:-. ';
         return chars[Math.floor((value + 1) * chars.length / 2)];
     }
@@ -53,8 +62,8 @@ class ASCIIAnimations {
         if (!this.isAnimating) return;
 
         const container = document.getElementById('ascii-container');
-        const width = Math.floor(window.innerWidth / 10);
-        const height = Math.floor(window.innerHeight / 20);
+        const width = Math.floor(window.innerWidth / 8);
+        const height = Math.floor(window.innerHeight / 16);
         let output = '';
 
         const time = Date.now();
