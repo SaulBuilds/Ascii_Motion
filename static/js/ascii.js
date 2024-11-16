@@ -19,21 +19,33 @@ class ASCIIArt {
         this.setupCanvas();
         this.setupCursor();
         this.setupConfigPanel();
-        this.setupWebSocket();
         this.videoToASCII = new VideoToASCII(this);
         this.setupFileUpload();
+        // Move WebSocket setup to the end with timeout
+        setTimeout(() => this.setupWebSocket(), 100);
     }
 
     setupWebSocket() {
-        this.socket = io();
+        // Check if Socket.IO is loaded
+        if (typeof io === 'undefined') {
+            console.warn('Socket.IO not loaded, retrying in 1 second...');
+            setTimeout(() => this.setupWebSocket(), 1000);
+            return;
+        }
         
-        this.socket.on('connect', () => {
-            console.log('Connected to WebSocket');
-        });
-        
-        this.socket.on('ascii_broadcast', (data) => {
-            this.updateFeed(data);
-        });
+        try {
+            this.socket = io();
+            
+            this.socket.on('connect', () => {
+                console.log('Connected to WebSocket');
+            });
+            
+            this.socket.on('ascii_broadcast', (data) => {
+                this.updateFeed(data);
+            });
+        } catch (error) {
+            console.error('Error setting up WebSocket:', error);
+        }
     }
 
     updateFeed(data) {
@@ -233,6 +245,12 @@ class VideoToASCII {
             throw new Error('ASCIIArt instance must be provided');
         }
         this.asciiArt = asciiArt;
+        
+        // Verify the ASCII container exists
+        if (!this.asciiArt.ascii_container) {
+            throw new Error('ASCII container not found');
+        }
+        
         this.frameBuffer = [];
         this.isPlaying = false;
         this.currentFrame = 0;
@@ -350,12 +368,7 @@ class VideoToASCII {
         const imageData = ctx.getImageData(0, 0, width, height);
         let asciiFrame = '';
         
-        const chars = (this.asciiArt && 
-                      this.asciiArt.config && 
-                      this.asciiArt.config.charSets && 
-                      this.asciiArt.config.currentCharSet) 
-            ? this.asciiArt.config.charSets[this.asciiArt.config.currentCharSet] 
-            : '@#$%=+*:-. ';
+        const chars = this.asciiArt.config.charSets[this.asciiArt.config.currentCharSet];
         
         for (let i = 0; i < imageData.data.length; i += 4) {
             if (i % (width * 4) === 0) asciiFrame += '\n';
