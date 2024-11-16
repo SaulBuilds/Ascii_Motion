@@ -21,7 +21,7 @@ class ASCIIArt {
         this.setupConfigPanel();
         this.setupWebSocket();
         this.videoToASCII = new VideoToASCII(this);
-        this.setupFileUpload(); // Moved here as requested
+        this.setupFileUpload();
     }
 
     setupWebSocket() {
@@ -134,43 +134,58 @@ class ASCIIArt {
     }
 
     setupFileUpload() {
-        document.querySelector('[data-action="upload-video"]').addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const videoInput = document.getElementById('videoUpload');
-            videoInput.value = ''; // Reset input
-            videoInput.click();
-        });
-
         const videoInput = document.getElementById('videoUpload');
-        videoInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                await this.videoToASCII.processVideo(file);
-            }
-        });
+        const uploadButton = document.querySelector('[data-action="upload-video"]');
+        
+        if (uploadButton) {
+            uploadButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (videoInput) {
+                    videoInput.value = ''; // Reset input
+                    videoInput.click();
+                }
+            });
+        }
+
+        if (videoInput) {
+            videoInput.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file && this.videoToASCII) {
+                    try {
+                        await this.videoToASCII.processVideo(file);
+                    } catch (error) {
+                        console.error('Error uploading video:', error);
+                        alert('Error uploading video: ' + error.message);
+                    }
+                }
+            });
+        }
 
         // Add image upload handler
-        document.querySelector('[data-action="upload-image"]').addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const imageInput = document.getElementById('imageUpload');
-            imageInput.click();
-        });
-
         const imageInput = document.getElementById('imageUpload');
-        imageInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => this.convertImageToAscii(img);
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
+        const imageButton = document.querySelector('[data-action="upload-image"]');
+        
+        if (imageButton && imageInput) {
+            imageButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                imageInput.click();
+            });
+
+            imageInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const img = new Image();
+                        img.onload = () => this.convertImageToAscii(img);
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
     }
 
     handleMouseMove(e) {
@@ -237,36 +252,51 @@ class VideoToASCII {
     }
 
     async processVideo(videoFile) {
+        // Reset any existing state
+        this.frameBuffer = [];
+        this.currentFrame = 0;
+        this.isPlaying = false;
+
         if (!videoFile.type.startsWith('video/')) {
             alert('Please upload a valid video file');
             return;
         }
 
-        this.originalVideo = videoFile;
-        const video = document.createElement('video');
-        video.src = URL.createObjectURL(videoFile);
-        
-        video.onerror = () => {
-            alert('Error loading video. Please try a different file.');
-            const loadingIndicator = document.querySelector('.loading-indicator');
-            loadingIndicator.style.display = 'none';
-        };
-
         const loadingIndicator = document.querySelector('.loading-indicator');
         const controls = document.getElementById('video-controls');
-        loadingIndicator.style.display = 'block';
-        controls.style.display = 'flex';
-
-        video.addEventListener('loadeddata', () => {
-            this.extractFrames(video).then(() => {
-                loadingIndicator.style.display = 'none';
-                this.playASCII();
-            }).catch(err => {
-                console.error('Error processing video:', err);
-                alert('Error processing video: ' + err.message);
-                loadingIndicator.style.display = 'none';
+        
+        try {
+            loadingIndicator.style.display = 'block';
+            controls.style.display = 'flex';
+            
+            this.originalVideo = videoFile;
+            const video = document.createElement('video');
+            video.src = URL.createObjectURL(videoFile);
+            
+            await new Promise((resolve, reject) => {
+                video.onloadeddata = () => resolve();
+                video.onerror = () => reject(new Error('Error loading video'));
+                
+                // Add timeout
+                const timeout = setTimeout(() => {
+                    reject(new Error('Video loading timed out'));
+                }, 10000);
+                
+                video.addEventListener('loadeddata', () => {
+                    clearTimeout(timeout);
+                    resolve();
+                }, { once: true });
             });
-        });
+
+            await this.extractFrames(video);
+            loadingIndicator.style.display = 'none';
+            this.playASCII();
+            
+        } catch (error) {
+            console.error('Error processing video:', error);
+            alert('Error processing video: ' + error.message);
+            loadingIndicator.style.display = 'none';
+        }
     }
 
     async extractFrames(video) {
