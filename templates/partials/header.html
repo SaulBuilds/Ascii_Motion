@@ -1,0 +1,21 @@
+<header class="overlay">
+    <nav>
+        <ul class="nav-left">
+            <li><a href="{{ url_for('index') }}" class="nav-link">Home</a></li>
+            <li><a href="#" class="nav-link" data-action="toggle-animation">Toggle Animation</a></li>
+            <li><a href="#" class="nav-link" data-action="change-pattern">Change Pattern</a></li>
+            <li><a href="#" class="nav-link" data-action="upload-image">Upload Image</a></li>
+            <li><a href="#" class="nav-link" data-action="upload-video">Upload Video</a></li>
+            <li><a href="#" class="nav-link" data-action="toggle-config">Configure</a></li>
+        </ul>
+        <ul class="nav-right">
+            {% if current_user.is_authenticated %}
+                <li class="username">{{ current_user.username }}</li>
+                <li><a href="{{ url_for('auth.logout') }}" class="nav-link">Logout</a></li>
+            {% else %}
+                <li><a href="{{ url_for('auth.login') }}" class="nav-link">Login</a></li>
+                <li><a href="{{ url_for('auth.register') }}" class="nav-link">Register</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</header>
