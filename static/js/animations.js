@@ -65,7 +65,7 @@ class ASCIIAnimations {
 
         const container = document.getElementById('ascii-container');
         const width = Math.floor(window.innerWidth / 8);
-        const height = Math.floor(window.innerHeight / 16);
+        const height = Math.ceil(window.innerHeight / 16) + 1;
         let output = '';
 
         const time = Date.now();
@@ -73,7 +73,9 @@ class ASCIIAnimations {
             for (let x = 0; x < width; x++) {
                 output += this.patterns[this.currentPattern](x, y, time);
             }
-            output += '\n';
+            if (y < height - 1) {
+                output += '\n';
+            }
         }
 
         container.textContent = output;
