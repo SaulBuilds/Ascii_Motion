@@ -297,6 +297,38 @@ button[type="submit"]:hover {
     padding-left: 2rem;
 }
 
+/* Add new feed styles */
+.feed-container {
+    position: fixed;
+    right: 0;
+    top: 60px;
+    width: 300px;
+    height: calc(100vh - 60px);
+    background: rgba(0, 0, 0, 0.9);
+    border-left: 1px solid #33ff33;
+    padding: 1rem;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+}
+
+.feed-container.active {
+    transform: translateX(0);
+}
+
+.feed-entry {
+    margin-bottom: 1rem;
+    padding: 1rem;
+    border: 1px solid #33ff33;
+    background: rgba(51, 255, 51, 0.1);
+}
+
+.feed-entry pre {
+    font-size: 0.6rem;
+    line-height: 1;
+    overflow-x: auto;
+}
+
 .loading-indicator {
     color: #33ff33;
     text-align: center;

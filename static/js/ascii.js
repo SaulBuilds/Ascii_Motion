@@ -20,7 +20,59 @@ class ASCIIArt {
         this.setupCursor();
         this.setupFileUpload();
         this.setupConfigPanel();
+        this.setupWebSocket();
         this.videoToASCII = new VideoToASCII(this);
+    }
+
+    setupWebSocket() {
+        this.socket = io();
+        
+        this.socket.on('connect', () => {
+            console.log('Connected to WebSocket');
+        });
+        
+        this.socket.on('ascii_broadcast', (data) => {
+            this.updateFeed(data);
+        });
+    }
+
+    updateFeed(data) {
+        const feedContent = document.querySelector('.feed-content');
+        const artEntry = document.createElement('div');
+        artEntry.className = 'feed-entry';
+        artEntry.innerHTML = `
+            <h3>${data.title}</h3>
+            <pre>${data.content}</pre>
+            <p>By ${data.username} - ${new Date(data.created_at).toLocaleString()}</p>
+        `;
+        feedContent.insertBefore(artEntry, feedContent.firstChild);
+    }
+
+    async saveArt(title) {
+        if (!this.ascii_container.textContent) return;
+        
+        const artData = {
+            title: title,
+            content: this.ascii_container.textContent,
+            config: this.config
+        };
+        
+        try {
+            const response = await fetch('/ascii/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(artData)
+            });
+            
+            if (response.ok) {
+                const savedArt = await response.json();
+                this.socket.emit('ascii_update', savedArt);
+            }
+        } catch (error) {
+            console.error('Error saving ASCII art:', error);
+        }
     }
 
     setupCanvas() {
@@ -72,57 +124,13 @@ class ASCIIArt {
             this.config.frameRate = parseInt(e.target.value);
             document.getElementById('frameRateValue').textContent = `${this.config.frameRate} FPS`;
         });
-    }
 
-    setupFileUpload() {
-        const imageInput = document.getElementById('imageUpload');
-        const videoInput = document.getElementById('videoUpload');
-        
-        videoInput.style.display = 'none';
-        videoInput.setAttribute('accept', 'video/*');
-
-        document.querySelector('[data-action="upload-image"]').addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            imageInput.click();
-        });
-
-        document.querySelector('[data-action="upload-video"]').addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const videoInput = document.getElementById('videoUpload');
-            videoInput.value = ''; // Reset the input before clicking
-            videoInput.click();
-        });
-
-        imageInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => this.convertImageToAscii(img);
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
+        // Add save button event listener
+        document.querySelector('[data-action="save-art"]').addEventListener('click', () => {
+            const title = prompt('Enter a title for your ASCII art:');
+            if (title) {
+                this.saveArt(title);
             }
-        });
-
-        videoInput.addEventListener('change', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const file = e.target.files[0];
-            if (file) {
-                try {
-                    const loadingIndicator = document.querySelector('.loading-indicator');
-                    loadingIndicator.style.display = 'block';
-                    await this.videoToASCII.processVideo(file);
-                } catch (error) {
-                    console.error('Error processing video:', error);
-                    alert('Error processing video. Please try again.');
-                }
-            }
-            videoInput.value = ''; // Reset after processing
         });
     }
 
@@ -290,7 +298,13 @@ class VideoToASCII {
         const imageData = ctx.getImageData(0, 0, width, height);
         let asciiFrame = '';
         
-        const chars = this.asciiArt?.config?.charSets[this.asciiArt?.config?.currentCharSet] || '@#$%=+*:-. ';
+        // Safely access the chars configuration with fallback
+        const chars = (this.asciiArt && 
+                      this.asciiArt.config && 
+                      this.asciiArt.config.charSets && 
+                      this.asciiArt.config.currentCharSet) 
+            ? this.asciiArt.config.charSets[this.asciiArt.config.currentCharSet] 
+            : '@#$%=+*:-. ';
         
         for (let i = 0; i < imageData.data.length; i += 4) {
             if (i % (width * 4) === 0) asciiFrame += '\n';

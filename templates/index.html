@@ -52,6 +52,7 @@
             <button data-action="play-video">Play</button>
             <button data-action="pause-video">Pause</button>
             <button data-action="stop-video">Stop</button>
+            <button data-action="save-art">Save to Feed</button>
             <div class="export-controls">
                 <button data-action="export-txt">Export TXT</button>
                 <button data-action="export-json">Export JSON</button>
@@ -59,6 +60,11 @@
             </div>
             <div class="loading-indicator" style="display: none;">Converting video...</div>
         </div>
+    </div>
+
+    <div id="public-feed" class="feed-container">
+        <h2>Public Feed</h2>
+        <div class="feed-content"></div>
     </div>
 
     <input type="file" id="imageUpload" accept="image/*" style="display: none;">
