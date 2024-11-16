@@ -119,19 +119,42 @@ class VideoToASCII {
     }
 
     processVideo(videoFile) {
+        // Add file type validation
+        if (!videoFile.type.startsWith('video/')) {
+            alert('Please upload a valid video file');
+            return;
+        }
+
         const video = document.createElement('video');
         video.src = URL.createObjectURL(videoFile);
         
+        // Add error handling for video loading
+        video.onerror = () => {
+            alert('Error loading video. Please try a different file.');
+            const loadingIndicator = document.querySelector('.loading-indicator');
+            loadingIndicator.style.display = 'none';
+        };
+
         // Show loading indicator
         const loadingIndicator = document.querySelector('.loading-indicator');
         const controls = document.getElementById('video-controls');
         loadingIndicator.style.display = 'block';
         controls.style.display = 'block';
 
+        // Add timeout handling
+        const loadTimeout = setTimeout(() => {
+            alert('Video loading timed out. Please try a smaller file.');
+            loadingIndicator.style.display = 'none';
+        }, 30000);
+
         video.addEventListener('loadeddata', () => {
+            clearTimeout(loadTimeout);
             this.extractFrames(video).then(() => {
                 loadingIndicator.style.display = 'none';
                 this.playASCII();
+            }).catch(err => {
+                alert('Error processing video: ' + err.message);
+                loadingIndicator.style.display = 'none';
             });
         });
     }
@@ -140,21 +163,34 @@ class VideoToASCII {
         this.frameBuffer = [];
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        const frameCount = Math.floor(video.duration * 24); // 24 fps
+        
+        // Reduce frame rate for better performance
+        const frameRate = 12; // frames per second
+        const frameCount = Math.floor(video.duration * frameRate);
         
         canvas.width = 100;
         canvas.height = Math.floor(video.videoHeight * 100 / video.videoWidth / 2);
 
         for (let i = 0; i < frameCount; i++) {
-            video.currentTime = i / 24;
-            await new Promise(resolve => {
-                video.addEventListener('seeked', () => {
-                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    const frame = this.convertFrameToASCII(ctx, canvas.width, canvas.height);
-                    this.frameBuffer.push(frame);
-                    resolve();
-                }, { once: true });
-            });
+            video.currentTime = i / frameRate;
+            try {
+                await new Promise((resolve, reject) => {
+                    const timeoutId = setTimeout(() => {
+                        reject(new Error('Frame extraction timed out'));
+                    }, 5000);
+
+                    video.addEventListener('seeked', () => {
+                        clearTimeout(timeoutId);
+                        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const frame = this.convertFrameToASCII(ctx, canvas.width, canvas.height);
+                        this.frameBuffer.push(frame);
+                        resolve();
+                    }, { once: true });
+                });
+            } catch (error) {
+                console.error('Error extracting frame:', error);
+                throw error;
+            }
         }
     }
 
@@ -190,7 +226,7 @@ class VideoToASCII {
         this.asciiArt.ascii_container.textContent = this.frameBuffer[this.currentFrame];
         this.currentFrame++;
         
-        setTimeout(() => requestAnimationFrame(() => this.playNextFrame()), 1000 / 24);
+        setTimeout(() => requestAnimationFrame(() => this.playNextFrame()), 1000 / 12); // Match the frame rate
     }
 
     pauseASCII() {
