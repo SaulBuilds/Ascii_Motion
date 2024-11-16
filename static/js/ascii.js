@@ -317,7 +317,9 @@ class VideoToASCII {
         }
         
         const frame = this.frameBuffer[this.currentFrame];
-        if (frame && frame.ascii) {
+        if (!frame) return; // Add early return if frame is undefined
+        
+        if (frame && frame.ascii && this.asciiArt && this.asciiArt.ascii_container) {
             this.asciiArt.ascii_container.textContent = frame.ascii;
             this.currentFrame++;
             setTimeout(() => requestAnimationFrame(() => this.playNextFrame()), 1000 / this.asciiArt.config.frameRate);
