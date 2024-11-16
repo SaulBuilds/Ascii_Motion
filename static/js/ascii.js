@@ -63,10 +63,20 @@ class ASCIIArt {
             }
         });
 
-        videoInput.addEventListener('change', (e) => {
+        videoInput.addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (file) {
-                this.videoToASCII.processVideo(file);
+                try {
+                    // Reset the input value to allow selecting the same file again
+                    videoInput.value = '';
+                    // Show loading indicator before processing
+                    const loadingIndicator = document.querySelector('.loading-indicator');
+                    loadingIndicator.style.display = 'block';
+                    await this.videoToASCII.processVideo(file);
+                } catch (error) {
+                    console.error('Error processing video:', error);
+                    alert('Error processing video. Please try again.');
+                }
             }
         });
     }
@@ -126,7 +136,7 @@ class VideoToASCII {
         document.querySelector('[data-action="stop-video"]').addEventListener('click', () => this.stopASCII());
     }
 
-    processVideo(videoFile) {
+    async processVideo(videoFile) {
         // Add file type validation
         if (!videoFile.type.startsWith('video/')) {
             alert('Please upload a valid video file');
