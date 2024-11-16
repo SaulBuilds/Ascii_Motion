@@ -286,10 +286,11 @@ class VideoToASCII {
     }
 
     convertFrameToASCII(ctx, width, height) {
+        if (!ctx || !width || !height) return null;
         const imageData = ctx.getImageData(0, 0, width, height);
         let asciiFrame = '';
         
-        const chars = this.asciiArt.config.charSets[this.asciiArt.config.currentCharSet];
+        const chars = this.asciiArt?.config?.charSets[this.asciiArt?.config?.currentCharSet] || '@#$%=+*:-. ';
         
         for (let i = 0; i < imageData.data.length; i += 4) {
             if (i % (width * 4) === 0) asciiFrame += '\n';
