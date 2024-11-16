@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASCII Art Interactive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="overlay">
+        <nav>
+            <ul>
+                <li><a href="#" class="nav-link" data-action="toggle-animation">Toggle Animation</a></li>
+                <li><a href="#" class="nav-link" data-action="change-pattern">Change Pattern</a></li>
+                <li><a href="#" class="nav-link" data-action="upload-image">Upload Image</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+    
+    <main>
+        <canvas id="asciiCanvas"></canvas>
+        <div id="ascii-container"></div>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/ascii.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/animations.js') }}"></script>
+</body>
+</html>
