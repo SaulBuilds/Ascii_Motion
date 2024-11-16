@@ -466,5 +466,11 @@ class VideoToASCII {
 
 // Initialize ASCII art when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    const asciiArt = new ASCIIArt();
+    // Wait for Socket.IO to load
+    const waitForIO = setInterval(() => {
+        if (typeof io !== 'undefined') {
+            clearInterval(waitForIO);
+            const asciiArt = new ASCIIArt();
+        }
+    }, 100);
 });
