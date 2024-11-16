@@ -3,10 +3,23 @@ class ASCIIArt {
         this.canvas = document.getElementById('asciiCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.ascii_container = document.getElementById('ascii-container');
-        this.ASCII_CHARS = '@#$%=+*:-. ';
+        this.config = {
+            charSets: {
+                default: '@#$%=+*:-. ',
+                blocks: '█▓▒░ ',
+                simple: '.:-=+*#%@',
+                complex: '╋╋┫┣╭╮╯╰'
+            },
+            currentCharSet: 'default',
+            fgColor: '#33ff33',
+            bgColor: '#000000',
+            density: 100,
+            frameRate: 12
+        };
         this.setupCanvas();
         this.setupCursor();
         this.setupFileUpload();
+        this.setupConfigPanel();
         this.videoToASCII = new VideoToASCII(this);
     }
 
@@ -30,11 +43,46 @@ class ASCIIArt {
         });
     }
 
+    setupConfigPanel() {
+        // Toggle config panel
+        document.querySelector('[data-action="toggle-config"]').addEventListener('click', (e) => {
+            e.preventDefault();
+            const panel = document.getElementById('config-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Color pickers
+        document.getElementById('fgColor').addEventListener('change', (e) => {
+            this.config.fgColor = e.target.value;
+            this.ascii_container.style.color = this.config.fgColor;
+        });
+
+        document.getElementById('bgColor').addEventListener('change', (e) => {
+            this.config.bgColor = e.target.value;
+            document.body.style.backgroundColor = this.config.bgColor;
+        });
+
+        // Character density
+        document.getElementById('charDensity').addEventListener('input', (e) => {
+            this.config.density = parseInt(e.target.value);
+        });
+
+        // Character set
+        document.getElementById('charSet').addEventListener('change', (e) => {
+            this.config.currentCharSet = e.target.value;
+        });
+
+        // Frame rate
+        document.getElementById('frameRate').addEventListener('input', (e) => {
+            this.config.frameRate = parseInt(e.target.value);
+            document.getElementById('frameRateValue').textContent = `${this.config.frameRate} FPS`;
+        });
+    }
+
     setupFileUpload() {
         const imageInput = document.getElementById('imageUpload');
         const videoInput = document.getElementById('videoUpload');
         
-        // Initialize video input element
         videoInput.style.display = 'none';
         videoInput.setAttribute('accept', 'video/*');
 
@@ -67,9 +115,7 @@ class ASCIIArt {
             const file = e.target.files[0];
             if (file) {
                 try {
-                    // Reset the input value to allow selecting the same file again
                     videoInput.value = '';
-                    // Show loading indicator before processing
                     const loadingIndicator = document.querySelector('.loading-indicator');
                     loadingIndicator.style.display = 'block';
                     await this.videoToASCII.processVideo(file);
@@ -85,13 +131,11 @@ class ASCIIArt {
         const x = e.clientX;
         const y = e.clientY;
         
-        // Create ripple effect
         this.ctx.fillStyle = 'rgba(51, 255, 51, 0.1)';
         this.ctx.beginPath();
         this.ctx.arc(x, y, 50, 0, Math.PI * 2);
         this.ctx.fill();
         
-        // Fade out effect
         setTimeout(() => {
             this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -99,7 +143,7 @@ class ASCIIArt {
     }
 
     convertImageToAscii(img) {
-        const width = 100;
+        const width = this.config.density;
         const height = Math.floor(img.height * width / img.width / 2);
         
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -108,12 +152,14 @@ class ASCIIArt {
         const imageData = this.ctx.getImageData(0, 0, width, height);
         let asciiArt = '';
         
+        const chars = this.config.charSets[this.config.currentCharSet];
+        
         for (let i = 0; i < imageData.data.length; i += 4) {
             if (i % (width * 4) === 0) asciiArt += '\n';
             
             const brightness = (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
-            const charIndex = Math.floor(brightness / 255 * (this.ASCII_CHARS.length - 1));
-            asciiArt += this.ASCII_CHARS[charIndex];
+            const charIndex = Math.floor(brightness / 255 * (chars.length - 1));
+            asciiArt += chars[charIndex];
         }
         
         this.ascii_container.textContent = asciiArt;
@@ -126,6 +172,7 @@ class VideoToASCII {
         this.frameBuffer = [];
         this.isPlaying = false;
         this.currentFrame = 0;
+        this.originalVideo = null;
         this.setupControls();
     }
 
@@ -134,32 +181,34 @@ class VideoToASCII {
         document.querySelector('[data-action="play-video"]').addEventListener('click', () => this.playASCII());
         document.querySelector('[data-action="pause-video"]').addEventListener('click', () => this.pauseASCII());
         document.querySelector('[data-action="stop-video"]').addEventListener('click', () => this.stopASCII());
+        
+        // Export controls
+        document.querySelector('[data-action="export-txt"]').addEventListener('click', () => this.exportAsTXT());
+        document.querySelector('[data-action="export-json"]').addEventListener('click', () => this.exportAsJSON());
+        document.querySelector('[data-action="export-video"]').addEventListener('click', () => this.exportVideo());
     }
 
     async processVideo(videoFile) {
-        // Add file type validation
         if (!videoFile.type.startsWith('video/')) {
             alert('Please upload a valid video file');
             return;
         }
 
+        this.originalVideo = videoFile;
         const video = document.createElement('video');
         video.src = URL.createObjectURL(videoFile);
         
-        // Add error handling for video loading
         video.onerror = () => {
             alert('Error loading video. Please try a different file.');
             const loadingIndicator = document.querySelector('.loading-indicator');
             loadingIndicator.style.display = 'none';
         };
 
-        // Show loading indicator
         const loadingIndicator = document.querySelector('.loading-indicator');
         const controls = document.getElementById('video-controls');
         loadingIndicator.style.display = 'block';
         controls.style.display = 'block';
 
-        // Add timeout handling
         const loadTimeout = setTimeout(() => {
             alert('Video loading timed out. Please try a smaller file.');
             loadingIndicator.style.display = 'none';
@@ -182,12 +231,11 @@ class VideoToASCII {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         
-        // Reduce frame rate for better performance
-        const frameRate = 12; // frames per second
+        const frameRate = this.asciiArt.config.frameRate;
         const frameCount = Math.floor(video.duration * frameRate);
         
-        canvas.width = 100;
-        canvas.height = Math.floor(video.videoHeight * 100 / video.videoWidth / 2);
+        canvas.width = this.asciiArt.config.density;
+        canvas.height = Math.floor(video.videoHeight * canvas.width / video.videoWidth / 2);
 
         for (let i = 0; i < frameCount; i++) {
             video.currentTime = i / frameRate;
@@ -201,7 +249,10 @@ class VideoToASCII {
                         clearTimeout(timeoutId);
                         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                         const frame = this.convertFrameToASCII(ctx, canvas.width, canvas.height);
-                        this.frameBuffer.push(frame);
+                        this.frameBuffer.push({
+                            ascii: frame,
+                            timestamp: i / frameRate
+                        });
                         resolve();
                     }, { once: true });
                 });
@@ -216,12 +267,14 @@ class VideoToASCII {
         const imageData = ctx.getImageData(0, 0, width, height);
         let asciiFrame = '';
         
+        const chars = this.asciiArt.config.charSets[this.asciiArt.config.currentCharSet];
+        
         for (let i = 0; i < imageData.data.length; i += 4) {
             if (i % (width * 4) === 0) asciiFrame += '\n';
             
             const brightness = (imageData.data[i] + imageData.data[i + 1] + imageData.data[i + 2]) / 3;
-            const charIndex = Math.floor(brightness / 255 * (this.asciiArt.ASCII_CHARS.length - 1));
-            asciiFrame += this.asciiArt.ASCII_CHARS[charIndex];
+            const charIndex = Math.floor(brightness / 255 * (chars.length - 1));
+            asciiFrame += chars[charIndex];
         }
         
         return asciiFrame;
@@ -241,10 +294,10 @@ class VideoToASCII {
             this.currentFrame = 0;
         }
         
-        this.asciiArt.ascii_container.textContent = this.frameBuffer[this.currentFrame];
+        this.asciiArt.ascii_container.textContent = this.frameBuffer[this.currentFrame].ascii;
         this.currentFrame++;
         
-        setTimeout(() => requestAnimationFrame(() => this.playNextFrame()), 1000 / 12); // Match the frame rate
+        setTimeout(() => requestAnimationFrame(() => this.playNextFrame()), 1000 / this.asciiArt.config.frameRate);
     }
 
     pauseASCII() {
@@ -255,6 +308,52 @@ class VideoToASCII {
         this.isPlaying = false;
         this.currentFrame = 0;
         this.asciiArt.ascii_container.textContent = '';
+    }
+
+    exportAsTXT() {
+        const content = this.frameBuffer.map(frame => frame.ascii).join('\n---\n');
+        this.downloadFile(content, 'ascii-animation.txt', 'text/plain');
+    }
+
+    exportAsJSON() {
+        const content = JSON.stringify({
+            config: this.asciiArt.config,
+            frames: this.frameBuffer,
+            metadata: {
+                frameCount: this.frameBuffer.length,
+                totalDuration: this.frameBuffer[this.frameBuffer.length - 1].timestamp
+            }
+        }, null, 2);
+        this.downloadFile(content, 'ascii-animation.json', 'application/json');
+    }
+
+    exportVideo() {
+        if (this.originalVideo) {
+            const url = URL.createObjectURL(this.originalVideo);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'original-video' + this.getFileExtension(this.originalVideo.name);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    downloadFile(content, filename, type) {
+        const blob = new Blob([content], { type: type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    getFileExtension(filename) {
+        return filename.substring(filename.lastIndexOf('.'));
     }
 }
 

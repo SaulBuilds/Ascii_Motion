@@ -74,6 +74,68 @@ nav ul {
     pointer-events: none;
 }
 
+/* Config Panel */
+.panel {
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid #33ff33;
+    margin: 1rem auto;
+    max-width: 600px;
+    padding: 1rem;
+    box-shadow: 0 0 10px rgba(51, 255, 51, 0.3);
+}
+
+.config-group {
+    margin: 1rem 0;
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.config-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #33ff33;
+    font-size: 1rem;
+}
+
+.config-group input[type="color"] {
+    background: none;
+    border: 1px solid #33ff33;
+    padding: 0;
+    width: 50px;
+    height: 25px;
+    cursor: pointer;
+}
+
+.config-group input[type="range"] {
+    -webkit-appearance: none;
+    width: 150px;
+    height: 5px;
+    background: #33ff33;
+    outline: none;
+    cursor: pointer;
+}
+
+.config-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 15px;
+    height: 15px;
+    background: #33ff33;
+    border: 2px solid #000;
+    cursor: pointer;
+}
+
+.config-group select {
+    background: #000;
+    color: #33ff33;
+    border: 1px solid #33ff33;
+    padding: 0.3rem;
+    font-family: 'VT323', monospace;
+    cursor: pointer;
+}
+
 /* Custom cursor */
 .custom-cursor {
     position: fixed;
@@ -92,6 +154,7 @@ nav ul {
     justify-content: center;
     gap: 1rem;
     margin-top: 1rem;
+    flex-wrap: wrap;
 }
 
 .controls button {
@@ -108,6 +171,14 @@ nav ul {
 .controls button:hover {
     background: rgba(51, 255, 51, 0.2);
     text-shadow: 0 0 5px #33ff33;
+}
+
+.export-controls {
+    display: flex;
+    gap: 1rem;
+    margin-left: 2rem;
+    border-left: 1px solid #33ff33;
+    padding-left: 2rem;
 }
 
 .loading-indicator {

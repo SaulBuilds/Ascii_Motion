@@ -14,12 +14,49 @@
                 <li><a href="#" class="nav-link" data-action="change-pattern">Change Pattern</a></li>
                 <li><a href="#" class="nav-link" data-action="upload-image">Upload Image</a></li>
                 <li><a href="#" class="nav-link" data-action="upload-video">Upload Video</a></li>
+                <li><a href="#" class="nav-link" data-action="toggle-config">Configure</a></li>
             </ul>
         </nav>
+        <div id="config-panel" class="panel" style="display: none;">
+            <div class="config-group">
+                <label>Foreground Color:
+                    <input type="color" id="fgColor" value="#33ff33">
+                </label>
+                <label>Background Color:
+                    <input type="color" id="bgColor" value="#000000">
+                </label>
+            </div>
+            <div class="config-group">
+                <label>Character Density:
+                    <input type="range" id="charDensity" min="50" max="200" value="100">
+                </label>
+            </div>
+            <div class="config-group">
+                <label>Character Set:
+                    <select id="charSet">
+                        <option value="default">Default (@#$%=+*:-.)</option>
+                        <option value="blocks">Blocks (█▓▒░)</option>
+                        <option value="simple">Simple (.:-=+*#%@)</option>
+                        <option value="complex">Complex (╋╋┫┣╭╮╯╰)</option>
+                    </select>
+                </label>
+            </div>
+            <div class="config-group">
+                <label>Frame Rate:
+                    <input type="range" id="frameRate" min="1" max="30" value="12">
+                    <span id="frameRateValue">12 FPS</span>
+                </label>
+            </div>
+        </div>
         <div id="video-controls" class="controls" style="display: none;">
             <button data-action="play-video">Play</button>
             <button data-action="pause-video">Pause</button>
             <button data-action="stop-video">Stop</button>
+            <div class="export-controls">
+                <button data-action="export-txt">Export TXT</button>
+                <button data-action="export-json">Export JSON</button>
+                <button data-action="export-video">Export Video</button>
+            </div>
             <div class="loading-indicator" style="display: none;">Converting video...</div>
         </div>
     </div>
