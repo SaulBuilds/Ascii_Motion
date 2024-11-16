@@ -7,21 +7,41 @@ class ASCIIAnimations {
         ];
         this.currentPattern = 0;
         this.isAnimating = true;
+        this.initializeContainer();
         this.setupEventListeners();
         this.animate();
     }
 
-    setupEventListeners() {
-        document.querySelector('[data-action="toggle-animation"]').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.isAnimating = !this.isAnimating;
-            if (this.isAnimating) this.animate();
-        });
+    initializeContainer() {
+        this.container = document.getElementById('ascii-container');
+        if (!this.container) {
+            console.error('ASCII container not found');
+            return;
+        }
+        // Ensure the container is properly styled
+        this.container.style.fontFamily = 'monospace';
+        this.container.style.whiteSpace = 'pre';
+        this.container.style.lineHeight = '1';
+    }
 
-        document.querySelector('[data-action="change-pattern"]').addEventListener('click', (e) => {
-            e.preventDefault();
-            this.currentPattern = (this.currentPattern + 1) % this.patterns.length;
-        });
+    setupEventListeners() {
+        const toggleBtn = document.querySelector('[data-action="toggle-animation"]');
+        const patternBtn = document.querySelector('[data-action="change-pattern"]');
+        
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.isAnimating = !this.isAnimating;
+                if (this.isAnimating) this.animate();
+            });
+        }
+
+        if (patternBtn) {
+            patternBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this.currentPattern = (this.currentPattern + 1) % this.patterns.length;
+            });
+        }
     }
 
     rainPattern(x, y, time) {
@@ -61,9 +81,8 @@ class ASCIIAnimations {
     }
 
     animate() {
-        if (!this.isAnimating) return;
+        if (!this.isAnimating || !this.container) return;
 
-        const container = document.getElementById('ascii-container');
         const charWidth = 8;  // Approximate width of monospace character
         const charHeight = 16; // Match this to the font-size in CSS
         
@@ -84,12 +103,14 @@ class ASCIIAnimations {
             }
         }
 
-        container.textContent = output;
+        this.container.textContent = output;
         requestAnimationFrame(() => this.animate());
     }
 }
 
 // Initialize animations when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    const animations = new ASCIIAnimations();
+    if (document.getElementById('ascii-container')) {
+        window.asciiAnimations = new ASCIIAnimations();
+    }
 });
