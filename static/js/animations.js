@@ -25,21 +25,23 @@ class ASCIIAnimations {
     }
 
     rainPattern(x, y, time) {
-        const density = Math.sin(y * 0.1 + time * 0.001) * 0.1;
-        return Math.random() > (0.97 - density) ? '@' : 
-               Math.random() > (0.92 - density) ? '#' : 
-               Math.random() > (0.85 - density) ? '$' :
-               Math.random() > (0.80 - density) ? '%' :
-               Math.random() > (0.75 - density) ? '=' : ' ';
+        const density = Math.sin(y * 0.05 + time * 0.0002) * 0.2;
+        return Math.random() > (0.97 - density) ? '▓' : 
+               Math.random() > (0.92 - density) ? '▒' : 
+               Math.random() > (0.85 - density) ? '░' :
+               Math.random() > (0.80 - density) ? '≋' :
+               Math.random() > (0.75 - density) ? '≈' :
+               Math.random() > (0.70 - density) ? '˜' :
+               Math.random() > (0.65 - density) ? '~' : ' ';
     }
 
     wavePattern(x, y, time) {
-        const scale = 0.15;
-        const timeScale = 0.015;
+        const scale = 0.08;
+        const timeScale = 0.003;
         const value = Math.sin(x * scale + time * timeScale) * 
                      Math.cos(y * scale + time * timeScale) +
                      Math.sin((x + y) * scale * 0.5 + time * timeScale);
-        const chars = '@#$%=+*:-. ';
+        const chars = '˜~:≈≋≣░▒▓ ';
         const index = Math.floor(((value + 2) / 4) * chars.length);
         return chars[Math.max(0, Math.min(chars.length - 1, index))];
     }
@@ -51,10 +53,10 @@ class ASCIIAnimations {
         const dy = y - centerY;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const angle = Math.atan2(dy, dx);
-        const spiral = Math.sin(distance * 0.2 - time * 0.01 + angle * 2);
-        const wave = Math.cos(x * 0.1 + y * 0.1 + time * 0.01);
+        const spiral = Math.sin(distance * 0.1 - time * 0.002 + angle * 2);
+        const wave = Math.cos(x * 0.05 + y * 0.05 + time * 0.002);
         const value = (spiral + wave) * 0.5;
-        const chars = '@#$%=+*:-. ';
+        const chars = '.·˜~:≈≋≣░▒▓';
         return chars[Math.floor((value + 1) * chars.length / 2)];
     }
 
