@@ -64,11 +64,17 @@ class ASCIIAnimations {
         if (!this.isAnimating) return;
 
         const container = document.getElementById('ascii-container');
-        const width = Math.floor(window.innerWidth / 8);
-        const height = Math.ceil(window.innerHeight / 16) + 1;
+        const charWidth = 8;  // Approximate width of monospace character
+        const charHeight = 16; // Match this to the font-size in CSS
+        
+        // Calculate exact number of characters needed
+        const width = Math.ceil(window.innerWidth / charWidth);
+        const height = Math.ceil(window.innerHeight / charHeight);
+        
         let output = '';
-
         const time = Date.now();
+        
+        // Generate exactly enough characters to fill the space
         for (let y = 0; y < height; y++) {
             for (let x = 0; x < width; x++) {
                 output += this.patterns[this.currentPattern](x, y, time);
